@@ -1,0 +1,13 @@
+pandas
+numpy
+matplotlib
+pyprind
+scikit-learn
+scipy
+jupyter
+Pillow
+kaggle-cli
+pymongo
+scikit-image
+tqdm
+dictionaries
