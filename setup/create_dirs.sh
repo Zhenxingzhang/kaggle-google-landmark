@@ -9,6 +9,8 @@ mkdir -p /data/summary
 mkdir -p /data/outputs
 
 mkdir -p /data/landmarks
+mkdir -p /data/landmarks/retrieval
+mkdir -p /data/landmarks/query
 
 mkdir -p /data/checkpoints/landmarks
 mkdir -p /data/frozen/landmarks

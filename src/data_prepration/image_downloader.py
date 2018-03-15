@@ -1,27 +1,72 @@
-import numpy as np 
-import pandas as pd 
-import sys, requests, shutil, os
-from urllib import request, error
-# Input data files are available in the "../input/" directory.
-print(os.listdir("../input"))
-data=pd.read_csv('../input/train.csv')
-data.head(5)
+import sys, os, multiprocessing, csv
+import urllib
+from PIL import Image
+from io import BytesIO
+import tqdm as tqdm
 
-def fetch_image(path):
-    url=path
-    response=requests.get(url, stream=True)
-    with open('../input/train_images/image.jpg', 'wb') as out_file:
-        shutil.copyfileobj(response.raw, out_file)
-    del response
-links=data['url']
-i=0
 
-for link in links:              #looping over links to get images
-    if os.path.exists('../input/train/'+str(i)+'.jpg'):
-        i+=1
-        continue
-    fetch_image(link)
-    os.rename('../input/train_images/image.jpg','../input/train_images/'+ str(i)+ '.jpg')
-    i+=1
-    #if(i==15):   #uncomment to test in your machine
-    #    break
+def parse_data(data_file):
+    csvfile = open(data_file, 'r')
+    csvreader = csv.reader(csvfile)
+    key_url_list = [line[:2] for line in csvreader]
+    return key_url_list[1:]  # Chop off header
+
+
+def download_image(key_url):
+    out_dir = sys.argv[2]
+    (key, url) = key_url
+    filename = os.path.join(out_dir, '{}.jpg'.format(key))
+
+    if os.path.exists(filename):
+        print('Image {} already exists. Skipping download.'.format(filename))
+        return 0
+
+    try:
+        response = urllib.urlopen(url)
+        image_data = response.read()
+    except:
+        print('Warning: Could not download image {} from {}'.format(key, url))
+        return 1
+
+    try:
+        pil_image = Image.open(BytesIO(image_data))
+    except:
+        print('Warning: Failed to parse image {}'.format(key))
+        return 1
+
+    try:
+        pil_image_rgb = pil_image.convert('RGB')
+    except:
+        print('Warning: Failed to convert image {} to RGB'.format(key))
+        return 1
+
+    try:
+        pil_image_rgb.save(filename, format='JPEG', quality=90)
+    except:
+        print('Warning: Failed to save image {}'.format(filename))
+        return 1
+
+    return 0
+
+
+def loader():
+    if len(sys.argv) != 3:
+        print('Syntax: {} <data_file.csv> <output_dir/>'.format(sys.argv[0]))
+        sys.exit(0)
+    (data_file, out_dir) = sys.argv[1:]
+
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
+
+    key_url_list = parse_data(data_file)
+    pool = multiprocessing.Pool(processes=20)  # Num of CPUs
+    failures = sum(tqdm.tqdm(pool.imap_unordered(download_image, key_url_list), total=len(key_url_list)))
+    print('Total number of download failures:', failures)
+    pool.close()
+    pool.terminate()
+
+
+# arg1 : data_file.csv
+# arg2 : output_dir
+if __name__ == '__main__':
+    loader()
