@@ -6,9 +6,9 @@ import tqdm as tqdm
 
 
 def parse_data(data_file):
-    csvfile = open(data_file, 'r')
-    csvreader = csv.reader(csvfile)
-    key_url_list = [line[:2] for line in csvreader]
+    csv_file = open(data_file, 'r')
+    csv_reader = csv.reader(csv_file)
+    key_url_list = [line[:2] for line in csv_reader]
     return key_url_list[1:]  # Chop off header
 
 
